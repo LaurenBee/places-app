@@ -75,23 +75,23 @@ jobs:
           RELEASE_BRANCHES: ‘main’
           DEFAULT_BUMP: patch
 
-  get_commit_sha:
-    name: Get SHA
-    needs: [lint-test, security-checks]
-    runs-on: ubuntu-latest
-    outputs:
-      sha_output: ${{ steps.short_sha_generator.outputs.SHORT_SHA }}
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v3
-      - name: Get short SHA
-        id: short_sha_generator
-        run: echo “SHORT_SHA=$(git rev-parse --short HEAD)” >> $GITHUB_OUTPUT
+  # get_commit_sha:
+  #   name: Get SHA
+  #   needs: [lint-test, security-checks]
+  #   runs-on: ubuntu-latest
+  #   outputs:
+  #     sha_output: ${{ steps.short_sha_generator.outputs.SHORT_SHA }}
+  #   steps:
+  #     - name: Check out code
+  #       uses: actions/checkout@v3
+  #     - name: Get short SHA
+  #       id: short_sha_generator
+  #       run: echo “SHORT_SHA=$(git rev-parse --short HEAD)” >> $GITHUB_OUTPUT
 
 # building docker image, mr-smithers is the actions
   push_to_docker:
     name: Push image to docker
-    needs: [bump_version, get_commit_sha]
+    needs: [bump_version]
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
