@@ -51,7 +51,7 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=critical
+          args: --severity-threshold=high
 
 # semver versioning default to patch
   bump_version:
@@ -100,7 +100,7 @@ jobs:
         uses: mr-smithers-excellent/docker-build-push@v5
         with:
           image: lrbee91/places-app
-          tags: latest, ${{ needs.bump_version.outputs.new_tag }}-SNAPSHOT
+          tags: ${{ needs.bump_version.outputs.new_tag }}-SNAPSHOT
           registry: docker.io
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
