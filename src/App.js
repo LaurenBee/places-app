@@ -1,9 +1,13 @@
 import './App.css';
 
 function App() {
+
+  const { version } = window['appConfig'] || 'demo';
+
   return (
     <div className="App">
-      Hiya
+      Places App
+      <h3>Version: { version }</h3>
     </div>
   );
 }

@@ -1,19 +1,15 @@
-name: Development Workflow
+name: Production Workflow
 
-# trigger to start workflow
-on: 
-  pull_request:
+on:
+  push:
     branches:
       - main
 
-# permissions for github
 permissions:
   contents: read
 
-# only run one thing at a time 
 concurrency: production
 
-# steps in order
 jobs:
   lint-test:
     name: Lint, Test & Code Coverage
@@ -35,8 +31,6 @@ jobs:
         run: npx eslint --ext .js src/ --fix-dry-run
       - name: Run tests
         run: npm test -- --coverage
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
 
   security-checks:
     name: Run security checks
@@ -51,9 +45,8 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high
+          args: --severity-threshold=critical
 
-# semver versioning default to patch
   bump_version:
     name: Bump version
     runs-on: ubuntu-latest
@@ -75,20 +68,6 @@ jobs:
           RELEASE_BRANCHES: ‘main’
           DEFAULT_BUMP: patch
 
-  # get_commit_sha:
-  #   name: Get SHA
-  #   needs: [lint-test, security-checks]
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     sha_output: ${{ steps.short_sha_generator.outputs.SHORT_SHA }}
-  #   steps:
-  #     - name: Check out code
-  #       uses: actions/checkout@v3
-  #     - name: Get short SHA
-  #       id: short_sha_generator
-  #       run: echo “SHORT_SHA=$(git rev-parse --short HEAD)” >> $GITHUB_OUTPUT
-
-# building docker image, mr-smithers is the actions
   push_to_docker:
     name: Push image to docker
     needs: [bump_version]
@@ -100,7 +79,28 @@ jobs:
         uses: mr-smithers-excellent/docker-build-push@v5
         with:
           image: lrbee91/places-app
-          tags: ${{ needs.bump_version.outputs.new_tag }}-SNAPSHOT
+          tags: latest, ${{ needs.bump_version.outputs.new_tag }}
           registry: docker.io
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+
+  deploy_app:
+    name: Deploy to Production
+    needs: [push_to_docker, bump_version]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: npm ci
+      - name: Build
+        run: npm run build --if-present
+      - name: Inject version
+        run: |
+         echo "window['appConfig'] = {\"version\": \"${{ needs.bump_version.outputs.new_tag }}\"}" > build/app-config.js
+      - name: Deploy app
+        uses: akhileshns/heroku-deploy@v3.12.12
+        with:
+          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
+          heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          heroku_app_name: 'places-app-prodlb'
