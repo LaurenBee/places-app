@@ -11,7 +11,7 @@ COPY . ./
 # creates build folder and puts build output in it
 RUN npm run build
 # Spin up backend server to run app on
-FROM nginx:1.19
+FROM nginx:1.22.1
 
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 # copy build dir output and put it in nginx
